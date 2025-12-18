@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sabor a Mexico - Reports</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<header>
+  <div>
+    <h1>Reports • Sabor a Mexico</h1>
+    <small id="meta"></small>
+  </div>
+  <div class="row">
+    <a href="/front.html">Front Desk</a>
+    <a href="/kitchen.html">Kitchen</a>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="row">
+      <label>Business Date<br><input id="date" type="date" /></label>
+      <button id="loadBtn" class="secondary">Load</button>
+      <a id="csvLink" class="badge" href="#" download>Download CSV</a>
+    </div>
+    <div style="margin-top:8px">
+      <span class="badge" id="summary"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="badge">Orders</div>
+    <div id="tableWrap" style="margin-top:8px; overflow:auto;"></div>
+  </div>
+</main>
+
+<script src="/common.js"></script>
+<script>
+async function loadMeta(){
+  try {
+    const m = await api("/api/meta");
+    document.querySelector("#meta").textContent = `Store: ${m.storeName}`;
+    if (!document.querySelector("#date").value) {
+      document.querySelector("#date").value = m.businessDateToday;
+    }
+  } catch(e) {
+    document.querySelector("#meta").textContent = "Meta error: " + e.message;
+  }
+}
+
+async function loadDay(){
+  const date = document.querySelector("#date").value;
+  if (!date) return;
+
+  const sum = await api(`/api/summary?date=${encodeURIComponent(date)}`);
+  document.querySelector("#summary").textContent =
+    `Date: ${sum.date} • Total: ${sum.total} • Completed: ${sum.completed} • Canceled: ${sum.canceled} • In progress: ${sum.inProgress} • Avg prep: ${sum.avgPrepMin} min`;
+
+  const orders = await api(`/api/orders?date=${encodeURIComponent(date)}`);
+  const csvLink = document.querySelector("#csvLink");
+  csvLink.href = `/api/export.csv?date=${encodeURIComponent(date)}`;
+  csvLink.textContent = `Download CSV (${date})`;
+
+  const wrap = document.querySelector("#tableWrap");
+  wrap.innerHTML = "";
+  if (!orders.length) {
+    wrap.textContent = "No orders for this date.";
+    return;
+  }
+  const table = document.createElement("table");
+  const head = document.createElement("tr");
+  ["ID","Status","Type","Created","Done","Items","Notes"].forEach(h => {
+    const th = document.createElement("th");
+    th.textContent = h;
+    head.appendChild(th);
+  });
+  table.appendChild(head);
+
+  orders.forEach(o => {
+    const tr = document.createElement("tr");
+    const itemsStr = (o.items || []).map(it => {
+      return `${it.qty}x ${it.name}${it.note ? " ("+it.note+")" : ""}`;
+    }).join(" | ");
+    const cells = [
+      o.id,
+      o.status,
+      o.orderType || "-",
+      fmtTime(o.createdAt),
+      fmtTime(o.doneAt),
+      itemsStr,
+      o.notes || ""
+    ];
+    cells.forEach(v => {
+      const td = document.createElement("td");
+      td.textContent = v;
+      tr.appendChild(td);
+    });
+    table.appendChild(tr);
+  });
+
+  wrap.appendChild(table);
+}
+
+document.querySelector("#loadBtn").onclick = loadDay;
+
+loadMeta().then(loadDay);
+</script>
+</body>
+</html>

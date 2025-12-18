@@ -1,0 +1,309 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sabor a Mexico - Front Desk</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<header>
+  <div>
+    <h1>Front Desk • Sabor a Mexico</h1>
+    <small id="meta"></small>
+  </div>
+  <div class="row">
+    <a href="/kitchen.html">Kitchen Screen</a>
+    <a href="/reports.html">Reports</a>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="row">
+      <label>Cashier Name<br><input id="createdBy" placeholder="Sam" /></label>
+      <label>Order Type<br>
+        <select id="orderType">
+          <option>Takeaway</option>
+          <option>Dine-in</option>
+          <option>Delivery</option>
+        </select>
+      </label>
+    </div>
+
+    <hr />
+
+    <div class="row">
+      <label>Meat Choice<br>
+        <select id="meatChoice">
+          <option value="">None</option>
+          <option>Steak</option>
+          <option>Asada</option>
+          <option>Pork</option>
+          <option>Al Pastor</option>
+          <option>Chorizo</option>
+          <option>Birria Chicken</option>
+          <option>Barbacoa</option>
+        </select>
+      </label>
+      <label>Side<br>
+        <select id="sideChoice">
+          <option value="">None</option>
+          <option>Rice</option>
+          <option>Fries</option>
+          <option>Rice & Beans</option>
+          <option>Rice/Fries</option>
+          <option>Cheese Fries</option>
+          <option>Chips</option>
+          <option>Nachos & Cheese</option>
+          <option>Con/Elote</option>
+        </select>
+      </label>
+      <label>Qty<br>
+        <input id="itemQty" type="number" min="1" value="1" style="width:80px" />
+      </label>
+    </div>
+    <div style="height:8px"></div>
+    <label>Special Note (optional)<br>
+      <input id="itemNote" placeholder="no onion, mild, extra salsa..." />
+    </label>
+
+    <hr />
+
+    <div id="menuRoot"></div>
+
+    <hr />
+
+    <div>
+      <div class="badge">Items in this order</div>
+      <div id="itemsList" style="margin-top:8px"></div>
+      <div style="margin-top:8px" class="row">
+        <span class="order-total">Total: $<span id="orderTotal">0.00</span></span>
+      </div>
+    </div>
+
+    <div style="height:10px"></div>
+    <label>Order Notes (whole order, optional)<br>
+      <textarea id="notes" placeholder="General instructions for chef..."></textarea>
+    </label>
+
+    <div style="height:10px"></div>
+    <div class="row">
+      <button id="sendBtn">Send to Kitchen</button>
+      <button id="clearBtn" class="secondary">Clear</button>
+      <span id="statusMsg" class="badge"></span>
+    </div>
+  </div>
+</main>
+
+<script src="/common.js"></script>
+<script>
+const MENU = [
+  {
+    name: "Birria Specials",
+    items: [
+      { id: "3_birria_tacos", label: "3 Birria Tacos (w/ rice or fries)", price: 14.99 },
+      { id: "birria_pizza", label: "Birria Pizza", price: 19.99 },
+      { id: "3_chicken_birria", label: "3 Chicken Birria (w/ rice or fries)", price: 14.99 },
+    ]
+  },
+  {
+    name: "Burritos & Quesadillas",
+    items: [
+      { id: "quesadilla", label: "Quesadilla", price: 14.99 },
+      { id: "quesadilla_rf", label: "Quesadilla w/ rice & fries", price: 16.99 },
+      { id: "burrito", label: "Burrito", price: 14.99 },
+      { id: "california_burrito", label: "California Burrito", price: 16.99 },
+    ]
+  },
+  {
+    name: "Fajitas",
+    items: [
+      { id: "fajita_plate", label: "Fajita Plate (beef/pollo/combo)", price: 9.99 },
+    ]
+  },
+  {
+    name: "Taco Plates",
+    items: [
+      { id: "2_chicken_pork_tacos", label: "2 Chicken or Pork Tacos (w/ rice & beans)", price: 9.99 },
+      { id: "3_tacos_al_pastor_chicken", label: "3 Tacos Al Pastor/Chicken (w/ rice or fries)", price: 12.99 },
+      { id: "3_tacos_asada", label: "3 Tacos Asada (w/ rice or fries)", price: 14.99 },
+      { id: "any_taco", label: "Any Taco", price: 3.99 },
+    ]
+  },
+  {
+    name: "Tortas & Hotdogs",
+    items: [
+      { id: "torta", label: "Torta", price: 14.99 },
+      { id: "torta_rf", label: "Torta w/ rice & fries", price: 16.99 },
+      { id: "2_mexican_hotdogs", label: "2 Mexican Hotdogs", price: 7.99 },
+      { id: "2_mexican_hotdogs_rf", label: "2 Mexican Hotdogs w/ rice & fries", price: 9.99 },
+      { id: "2_hotdogs_asada", label: "2 Hotdogs w/ Asada", price: 11.99 },
+      { id: "2_hotdogs_asada_rf", label: "2 Hotdogs w/ Asada w/ rice & fries", price: 13.99 },
+    ]
+  },
+  {
+    name: "Crunchy Favorites",
+    items: [
+      { id: "california_flauta", label: "California Flauta", price: 9.99 },
+      { id: "nachos", label: "Nachos", price: 14.99 },
+    ]
+  },
+  {
+    name: "Mexican Drinks",
+    items: [
+      { id: "jarritos", label: "Jarritos (variety)", price: 0.00 },
+    ]
+  },
+  {
+    name: "Sides",
+    items: [
+      { id: "side_rice", label: "Rice", price: 2.99 },
+      { id: "side_fries", label: "Fries", price: 3.99 },
+      { id: "side_rice_beans", label: "Rice & Beans", price: 5.99 },
+      { id: "side_cheese_fries", label: "Cheese Fries", price: 6.99 },
+      { id: "side_chips", label: "Chips", price: 2.99 },
+      { id: "side_nachos_cheese", label: "Nachos & Cheese", price: 2.99 },
+      { id: "side_con_elote", label: "Con/Elote", price: 3.99 },
+    ]
+  }
+];
+
+let items = [];
+
+function money(n){ return n.toFixed(2); }
+function setMsg(s){ document.querySelector("#statusMsg").textContent = s || ""; }
+
+function buildMenu(){
+  const root = document.querySelector("#menuRoot");
+  root.innerHTML = "";
+  MENU.forEach(cat => {
+    const title = document.createElement("div");
+    title.className = "menu-category-title";
+    title.textContent = cat.name;
+    root.appendChild(title);
+
+    const grid = document.createElement("div");
+    grid.className = "menu-grid";
+
+    cat.items.forEach(item => {
+      const btn = document.createElement("button");
+      btn.className = "menu-btn";
+      btn.onclick = () => addMenuItem(item);
+      btn.innerHTML = `
+        <span class="menu-btn-title">${item.label}</span>
+        <span class="menu-btn-price">$${money(item.price)}</span>
+      `;
+      grid.appendChild(btn);
+    });
+
+    root.appendChild(grid);
+  });
+}
+
+function recomputeTotal(){
+  const total = items.reduce((sum, it)=> sum + (it.price || 0) * it.qty, 0);
+  document.querySelector("#orderTotal").textContent = money(total);
+}
+
+function renderItems(){
+  const root = document.querySelector("#itemsList");
+  root.innerHTML = "";
+  if (!items.length) {
+    root.textContent = "No items yet.";
+    document.querySelector("#orderTotal").textContent = "0.00";
+    return;
+  }
+  items.forEach((it, idx) => {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.style.justifyContent = "space-between";
+    row.style.marginBottom = "6px";
+
+    const left = document.createElement("div");
+    const lineTotal = (it.price || 0) * it.qty;
+    const noteText = it.note ? ` • ${it.note}` : "";
+    left.innerHTML = `<b>${it.qty}x</b> ${it.name}${noteText}<br><small>$${money(it.price || 0)} each • Line: $${money(lineTotal)}</small>`;
+
+    const btn = document.createElement("button");
+    btn.textContent = "Remove";
+    btn.className = "danger";
+    btn.onclick = () => { items.splice(idx,1); renderItems(); recomputeTotal(); };
+
+    row.appendChild(left);
+    row.appendChild(btn);
+    root.appendChild(row);
+  });
+  recomputeTotal();
+}
+
+function addMenuItem(menuItem){
+  const qty = Math.max(1, Number(document.querySelector("#itemQty").value || 1));
+  const meat = document.querySelector("#meatChoice").value;
+  const side = document.querySelector("#sideChoice").value;
+  const extraNote = document.querySelector("#itemNote").value.trim();
+
+  const parts = [];
+  if (meat) parts.push(meat);
+  if (side) parts.push(side);
+  if (extraNote) parts.push(extraNote);
+
+  const note = parts.join(" | ");
+
+  items.push({
+    id: menuItem.id,
+    name: menuItem.label,
+    qty,
+    note,
+    price: menuItem.price
+  });
+
+  setMsg("");
+  renderItems();
+}
+
+document.querySelector("#clearBtn").onclick = () => {
+  items = [];
+  document.querySelector("#notes").value = "";
+  document.querySelector("#itemNote").value = "";
+  document.querySelector("#itemQty").value = 1;
+  document.querySelector("#meatChoice").value = "";
+  document.querySelector("#sideChoice").value = "";
+  setMsg("Cleared.");
+  renderItems();
+};
+
+document.querySelector("#sendBtn").onclick = async () => {
+  try {
+    if (!items.length) return setMsg("Add at least 1 item");
+    const createdBy = document.querySelector("#createdBy").value.trim() || "FrontDesk";
+    const orderType = document.querySelector("#orderType").value;
+    const notes = document.querySelector("#notes").value.trim();
+
+    const r = await api("/api/orders", {
+      method: "POST",
+      body: JSON.stringify({ createdBy, orderType, notes, items })
+    });
+
+    setMsg(`Sent! Order #${r.id}`);
+    items = [];
+    document.querySelector("#notes").value = "";
+    renderItems();
+  } catch(e) {
+    setMsg("Error: " + e.message);
+  }
+};
+
+async function loadMeta(){
+  try {
+    const m = await api("/api/meta");
+    document.querySelector("#meta").textContent = `Store: ${m.storeName} • Business Day: ${m.businessDateToday}`;
+  } catch(e) {}
+}
+
+buildMenu();
+renderItems();
+loadMeta();
+</script>
+</body>
+</html>

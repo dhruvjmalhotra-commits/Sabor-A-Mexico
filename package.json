@@ -1,0 +1,12 @@
+{
+  "name": "kds-sabor-mexico",
+  "version": "1.0.0",
+  "description": "Simple wireless KDS for Sabor a Mexico (front desk + kitchen + reports)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

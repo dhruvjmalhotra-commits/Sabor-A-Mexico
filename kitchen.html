@@ -1,0 +1,127 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sabor a Mexico - Kitchen</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<header>
+  <div>
+    <h1>Kitchen Screen • Sabor a Mexico</h1>
+    <small id="meta"></small>
+  </div>
+  <div class="row">
+    <label>Chef Name<br><input id="chefName" placeholder="Chef" /></label>
+    <a href="/front.html">Front Desk</a>
+    <a href="/reports.html">Reports</a>
+  </div>
+</header>
+
+<main>
+  <div class="kdsCols">
+    <div class="card">
+      <div class="menu-category-title">New Orders</div>
+      <div id="newOrders"></div>
+    </div>
+    <div class="card">
+      <div class="menu-category-title">In Progress</div>
+      <div id="progOrders"></div>
+    </div>
+  </div>
+  <div class="card">
+    <span class="badge" id="lastSync"></span>
+  </div>
+</main>
+
+<script src="/common.js"></script>
+<script>
+let meta = null;
+
+async function loadMeta(){
+  try {
+    meta = await api("/api/meta");
+    document.querySelector("#meta").textContent = `Store: ${meta.storeName} • Business Day: ${meta.businessDateToday}`;
+  } catch(e) {
+    document.querySelector("#meta").textContent = "Meta error: " + e.message;
+  }
+}
+
+function orderCard(o){
+  const chef = document.querySelector("#chefName").value.trim() || "Chef";
+  const ageMin = minutesSince(o.createdAt);
+  const header = el("div", { class:"orderId" }, `ORDER #${o.id}`, " ",
+    el("span", { class:"timer" }, `⏱ ${ageMin} min`)
+  );
+  const itemsWrap = el("div", { class:"items" });
+  (o.items || []).forEach(it => {
+    itemsWrap.appendChild(
+      el("div", { class:"itemLine" },
+        `${it.qty}x ${it.name}${it.note ? " — " + it.note : ""}`
+      )
+    );
+  });
+  const footer = el("div", { class: "footer-line" },
+    el("div", null, `Type: ${o.orderType || "-"}`),
+    el("div", null, `Created: ${fmtTime(o.createdAt)}`)
+  );
+  const btnRow = el("div", { class:"row", style:"margin-top:8px" });
+
+  if (o.status === "NEW") {
+    btnRow.appendChild(
+      el("button", { class:"secondary", onclick: async () => {
+        await api(`/api/orders/${o.id}`, { method:"PATCH", body: JSON.stringify({ action:"ACCEPT" }) });
+        refresh();
+      }}, "ACCEPT")
+    );
+  }
+  if (o.status === "IN_PROGRESS" || o.status === "NEW") {
+    btnRow.appendChild(
+      el("button", { class:"good", onclick: async () => {
+        await api(`/api/orders/${o.id}`, { method:"PATCH", body: JSON.stringify({ action:"DONE" }) });
+        refresh();
+      }}, "DONE")
+    );
+    btnRow.appendChild(
+      el("button", { class:"danger", onclick: async () => {
+        await api(`/api/orders/${o.id}`, { method:"PATCH", body: JSON.stringify({ action:"CANCEL" }) });
+        refresh();
+      }}, "CANCEL")
+    );
+  }
+
+  return el("div", { class:"card" }, header, itemsWrap, footer, btnRow);
+}
+
+async function refresh(){
+  try {
+    if (!meta) await loadMeta();
+    const date = meta.businessDateToday;
+    const all = await api(`/api/orders?date=${encodeURIComponent(date)}`);
+    const news = all.filter(o => o.status === "NEW");
+    const progs = all.filter(o => o.status === "IN_PROGRESS");
+
+    const newRoot = document.querySelector("#newOrders");
+    const progRoot = document.querySelector("#progOrders");
+    newRoot.innerHTML = "";
+    progRoot.innerHTML = "";
+
+    if (!news.length) newRoot.textContent = "No new orders.";
+    else news.forEach(o => newRoot.appendChild(orderCard(o)));
+
+    if (!progs.length) progRoot.textContent = "No orders in progress.";
+    else progs.forEach(o => progRoot.appendChild(orderCard(o)));
+
+    document.querySelector("#lastSync").textContent = "Last sync: " + new Date().toLocaleTimeString();
+  } catch(e) {
+    document.querySelector("#lastSync").textContent = "Sync error: " + e.message;
+  }
+}
+
+loadMeta();
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>

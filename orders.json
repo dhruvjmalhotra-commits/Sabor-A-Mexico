@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "createdBy": "Sam",
+    "orderType": "Takeaway",
+    "notes": "",
+    "items": [
+      {
+        "id": "torta_rf",
+        "name": "Torta w/ rice & fries",
+        "qty": 1,
+        "note": "Asada | mild",
+        "price": 16.99
+      },
+      {
+        "id": "nachos",
+        "name": "Nachos",
+        "qty": 1,
+        "note": "Asada | mild",
+        "price": 14.99
+      }
+    ],
+    "status": "COMPLETED",
+    "createdAt": 1766094368096,
+    "acceptedAt": 1766094373162,
+    "doneAt": 1766094377732,
+    "canceledAt": null,
+    "businessDate": "2025-12-18"
+  }
+]
