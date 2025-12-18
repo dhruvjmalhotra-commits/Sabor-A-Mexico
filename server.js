@@ -4,6 +4,8 @@ const fs = require("fs");
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));
+
+// Serve everything in /public (front.html, kitchen.html, reports.html, css, js)
 app.use(express.static(path.join(__dirname, "public")));
 
 const DATA_FILE = path.join(__dirname, "orders.json");
@@ -25,7 +27,9 @@ function saveDb() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(DB, null, 2));
 }
 
-function pad2(n){ return String(n).padStart(2,"0"); }
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
 
 function getBusinessDate(d = new Date()) {
   const y = d.getFullYear();
@@ -34,7 +38,7 @@ function getBusinessDate(d = new Date()) {
   return `${y}-${m}-${day}`;
 }
 
-// API: meta
+// Meta info
 app.get("/api/meta", (req, res) => {
   res.json({
     storeName: "Sabor a Mexico",
@@ -42,7 +46,7 @@ app.get("/api/meta", (req, res) => {
   });
 });
 
-// API: create order
+// Create order
 app.post("/api/orders", (req, res) => {
   const { createdBy = "FrontDesk", orderType = "Takeaway", notes = "", items = [] } = req.body || {};
   if (!Array.isArray(items) || items.length === 0) {
@@ -67,22 +71,17 @@ app.post("/api/orders", (req, res) => {
   res.json({ id: order.id, status: order.status });
 });
 
-// API: get orders (optionally filter by date/status)
+// List orders
 app.get("/api/orders", (req, res) => {
   const { date, status } = req.query;
   let result = DB.slice();
-  if (date) {
-    result = result.filter(o => o.businessDate === date);
-  }
-  if (status) {
-    result = result.filter(o => o.status === status);
-  }
-  // newest first
-  result.sort((a,b)=>b.id - a.id);
+  if (date) result = result.filter(o => o.businessDate === date);
+  if (status) result = result.filter(o => o.status === status);
+  result.sort((a, b) => b.id - a.id);
   res.json(result);
 });
 
-// API: update status: ACCEPT, DONE, CANCEL
+// Update status
 app.patch("/api/orders/:id", (req, res) => {
   const id = Number(req.params.id);
   const { action } = req.body || {};
@@ -107,7 +106,7 @@ app.patch("/api/orders/:id", (req, res) => {
   res.json({ ok: true, status: order.status });
 });
 
-// API: summary for a date
+// Summary for a date
 app.get("/api/summary", (req, res) => {
   const date = req.query.date || getBusinessDate(new Date());
   const list = DB.filter(o => o.businessDate === date);
@@ -121,13 +120,13 @@ app.get("/api/summary", (req, res) => {
     .map(o => (o.doneAt - o.createdAt) / 60000);
 
   const avgPrepMin = prepTimes.length
-    ? Number((prepTimes.reduce((a,b)=>a+b,0) / prepTimes.length).toFixed(1))
+    ? Number((prepTimes.reduce((a, b) => a + b, 0) / prepTimes.length).toFixed(1))
     : 0;
 
   res.json({ date, total, completed, canceled, inProgress, avgPrepMin });
 });
 
-// API: export csv
+// CSV export
 app.get("/api/export.csv", (req, res) => {
   const date = req.query.date || getBusinessDate(new Date());
   const list = DB.filter(o => o.businessDate === date);
@@ -175,10 +174,21 @@ app.get("/api/export.csv", (req, res) => {
   res.send(lines.join("\n"));
 });
 
-// default route
-app.get("/", (req,res)=> res.redirect("/front.html"));
+// Default routes so they always work
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "front.html"));
+});
+app.get("/front.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "front.html"));
+});
+app.get("/kitchen.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "kitchen.html"));
+});
+app.get("/reports.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "reports.html"));
+});
 
 const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => {
-  console.log("KDS Sabor a Mexico running on http://localhost:" + PORT);
+  console.log("KDS Sabor a Mexico running on port " + PORT);
 });
