@@ -11,6 +11,20 @@ app.use(express.static(path.join(__dirname, "public")));
 const DATA_FILE = path.join(__dirname, "orders.json");
 
 let DB = [];
+const TAX_RATE = 0.09;
+
+function calcOrderSubtotal(order) {
+  const items = order.items || [];
+  return items.reduce((sum, it) => {
+    const qty = Number(it.qty || 0);
+    const price = Number(it.price || 0);
+    return sum + (qty * price);
+  }, 0);
+}
+
+function round2(n) {
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+}
 
 // Load existing orders on startup
 if (fs.existsSync(DATA_FILE)) {
