@@ -5,73 +5,127 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sabor a Mexico - Reports</title>
   <link rel="stylesheet" href="/style.css" />
+  <style>
+    body { background:#0b1220; color:#f8fafc; font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif; margin:0; }
+    header { padding:14px 16px; background:#0f172a; border-bottom:1px solid #1e293b; }
+    h1 { margin:0; font-size:20px; font-weight:900; }
+    main { padding:16px; max-width: 1200px; margin: 0 auto; }
+    .card { background:#0f172a; border:1px solid #1e293b; border-radius:14px; padding:14px; margin-bottom:14px; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+    input, button { padding:10px; border-radius:10px; border:1px solid #24324a; background:#0b1220; color:#f8fafc; }
+    button { background:#16a34a; border:none; font-weight:900; cursor:pointer; }
+    a { color:#93c5fd; text-decoration:none; }
+    .kpi { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-top:10px; }
+    .kpiBox { background:#0b1220; border:1px solid #1e293b; border-radius:12px; padding:10px; }
+    .kpiLabel { color:#94a3b8; font-size:12px; font-weight:700; }
+    .kpiValue { font-size:20px; font-weight:950; color:#22c55e; margin-top:2px; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; }
+    th, td { border-bottom:1px solid #1e293b; padding:8px; text-align:left; font-size:13px; }
+    th { color:#cbd5e1; font-weight:900; }
+    .muted { color:#94a3b8; font-size:12px; }
+  </style>
 </head>
 <body>
 <header>
-  <div>
-    <h1>Reports • Sabor a Mexico</h1>
-    <small id="meta"></small>
-  </div>
-  <div class="row">
-    <a href="/front.html">Front Desk</a>
-    <a href="/kitchen.html">Kitchen</a>
-  </div>
+  <h1>Reports • Sabor a Mexico</h1>
+  <div class="muted">Use CSV download for daily backup and month-end reporting.</div>
 </header>
 
 <main>
   <div class="card">
     <div class="row">
-      <label>Business Date<br><input id="date" type="date" /></label>
-      <button id="loadBtn" class="secondary">Load</button>
-      <a id="csvLink" class="badge" href="#" download>Download CSV</a>
+      <div>
+        <div class="muted">Business Date</div>
+        <input id="date" type="date" />
+      </div>
+      <button id="loadBtn">Load</button>
+      <a id="csvLink" href="#" class="muted">Download CSV</a>
     </div>
-    <div style="margin-top:8px">
-      <span class="badge" id="summary"></span>
+
+    <div class="kpi">
+      <div class="kpiBox">
+        <div class="kpiLabel">Orders (Total)</div>
+        <div class="kpiValue" id="kTotalOrders">0</div>
+      </div>
+      <div class="kpiBox">
+        <div class="kpiLabel">Completed</div>
+        <div class="kpiValue" id="kCompleted">0</div>
+      </div>
+      <div class="kpiBox">
+        <div class="kpiLabel">Canceled</div>
+        <div class="kpiValue" id="kCanceled">0</div>
+      </div>
+      <div class="kpiBox">
+        <div class="kpiLabel">Avg Prep Time (min)</div>
+        <div class="kpiValue" id="kAvgPrep">0</div>
+      </div>
+      <div class="kpiBox">
+        <div class="kpiLabel">Subtotal</div>
+        <div class="kpiValue" id="kSubtotal">$0.00</div>
+      </div>
+      <div class="kpiBox">
+        <div class="kpiLabel">Tax (9%)</div>
+        <div class="kpiValue" id="kTax">$0.00</div>
+      </div>
+      <div class="kpiBox">
+        <div class="kpiLabel">Total</div>
+        <div class="kpiValue" id="kGrand">$0.00</div>
+      </div>
     </div>
   </div>
 
   <div class="card">
-    <div class="badge">Orders</div>
-    <div id="tableWrap" style="margin-top:8px; overflow:auto;"></div>
+    <div style="font-weight:900;font-size:16px;">Orders</div>
+    <div id="tableWrap" style="overflow:auto;"></div>
   </div>
 </main>
 
 <script src="/common.js"></script>
 <script>
+function fmtMoney(n){ return "$" + Number(n || 0).toFixed(2); }
+
 async function loadMeta(){
   try {
     const m = await api("/api/meta");
-    document.querySelector("#meta").textContent = `Store: ${m.storeName}`;
     if (!document.querySelector("#date").value) {
       document.querySelector("#date").value = m.businessDateToday;
     }
-  } catch(e) {
-    document.querySelector("#meta").textContent = "Meta error: " + e.message;
-  }
+  } catch(e) {}
 }
 
 async function loadDay(){
   const date = document.querySelector("#date").value;
   if (!date) return;
 
+  // Summary
   const sum = await api(`/api/summary?date=${encodeURIComponent(date)}`);
-  document.querySelector("#summary").textContent =
-    `Date: ${sum.date} • Total: ${sum.total} • Completed: ${sum.completed} • Canceled: ${sum.canceled} • In progress: ${sum.inProgress} • Avg prep: ${sum.avgPrepMin} min`;
+  document.querySelector("#kTotalOrders").textContent = sum.totalOrders ?? 0;
+  document.querySelector("#kCompleted").textContent = sum.completed ?? 0;
+  document.querySelector("#kCanceled").textContent = sum.canceled ?? 0;
+  document.querySelector("#kAvgPrep").textContent = sum.avgPrepMin ?? 0;
 
-  const orders = await api(`/api/orders?date=${encodeURIComponent(date)}`);
+  document.querySelector("#kSubtotal").textContent = fmtMoney(sum.subtotal);
+  document.querySelector("#kTax").textContent = fmtMoney(sum.tax);
+  document.querySelector("#kGrand").textContent = fmtMoney(sum.grandTotal);
+
+  // CSV link
   const csvLink = document.querySelector("#csvLink");
   csvLink.href = `/api/export.csv?date=${encodeURIComponent(date)}`;
   csvLink.textContent = `Download CSV (${date})`;
 
+  // Orders table
+  const orders = await api(`/api/orders?date=${encodeURIComponent(date)}`);
   const wrap = document.querySelector("#tableWrap");
   wrap.innerHTML = "";
+
   if (!orders.length) {
-    wrap.textContent = "No orders for this date.";
+    wrap.innerHTML = `<div class="muted" style="margin-top:10px;">No orders for this date.</div>`;
     return;
   }
+
   const table = document.createElement("table");
   const head = document.createElement("tr");
-  ["ID","Status","Type","Created","Done","Items","Notes"].forEach(h => {
+  ["ID","Status","Type","Created","Done","Subtotal","Tax","Total","Items","Notes"].forEach(h => {
     const th = document.createElement("th");
     th.textContent = h;
     head.appendChild(th);
@@ -79,16 +133,24 @@ async function loadDay(){
   table.appendChild(head);
 
   orders.forEach(o => {
+    const itemsStr = (o.items || []).map(it =>
+      `${it.qty}x ${it.name}${it.note ? " (" + it.note + ")" : ""}`
+    ).join(" | ");
+
+    const sub = (o.items || []).reduce((s, it) => s + (Number(it.qty||0) * Number(it.price||0)), 0);
+    const tax = sub * 0.09;
+    const tot = sub + tax;
+
     const tr = document.createElement("tr");
-    const itemsStr = (o.items || []).map(it => {
-      return `${it.qty}x ${it.name}${it.note ? " ("+it.note+")" : ""}`;
-    }).join(" | ");
     const cells = [
       o.id,
       o.status,
       o.orderType || "-",
       fmtTime(o.createdAt),
       fmtTime(o.doneAt),
+      fmtMoney(sub),
+      fmtMoney(tax),
+      fmtMoney(tot),
       itemsStr,
       o.notes || ""
     ];
@@ -104,7 +166,6 @@ async function loadDay(){
 }
 
 document.querySelector("#loadBtn").onclick = loadDay;
-
 loadMeta().then(loadDay);
 </script>
 </body>
