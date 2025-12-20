@@ -2,305 +2,250 @@
 <html>
 <head>
   <meta charset="utf-8" />
+  <title>Sabor a Mexico – Front Desk</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sabor a Mexico - Front Desk</title>
   <link rel="stylesheet" href="/style.css" />
+
+  <style>
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    header {
+      background: linear-gradient(90deg,#16a34a,#15803d);
+      padding: 14px 20px;
+      font-size: 20px;
+      font-weight: 800;
+      border-radius: 0 0 14px 14px;
+    }
+
+    .card {
+      background: #020617;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 10px 25px rgba(0,0,0,.4);
+    }
+
+    .menu-category {
+      margin-top: 14px;
+    }
+
+    .menu-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #22c55e;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
+      gap: 10px;
+    }
+
+    .menu-btn {
+      background: #020617;
+      border: 2px solid #1e293b;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: all .15s ease;
+    }
+
+    .menu-btn:hover {
+      border-color: #22c55e;
+      transform: scale(1.03);
+    }
+
+    .menu-name {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .menu-price {
+      font-size: 14px;
+      font-weight: 800;
+      color: #22c55e;
+      margin-top: 4px;
+    }
+
+    .total-box {
+      font-size: 20px;
+      font-weight: 900;
+      color: #22c55e;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      border-radius: 8px;
+      border: none;
+      background: #020617;
+      color: #f8fafc;
+    }
+
+    button {
+      background: #16a34a;
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      font-size: 15px;
+      font-weight: 800;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #334155;
+    }
+  </style>
 </head>
+
 <body>
 <header>
-  <div>
-    <h1>Front Desk • Sabor a Mexico</h1>
-    <small id="meta"></small>
-  </div>
-  
+  Sabor a Mexico • Front Desk
 </header>
 
-<main>
-  <div class="card">
-    <div class="row">
-      <label>Cashier Name<br><input id="createdBy" placeholder="Sam" /></label>
-      <label>Order Type<br>
-        <select id="orderType">
-          <option>Takeaway</option>
-          <option>Dine-in</option>
-          <option>Delivery</option>
-        </select>
-      </label>
-    </div>
+<main style="padding:14px">
 
-    <hr />
-
-    <div class="row">
-      <label>Meat Choice<br>
-        <select id="meatChoice">
-          <option value="">None</option>
-          <option>Steak</option>
-          <option>Asada</option>
-          <option>Pork</option>
-          <option>Al Pastor</option>
-          <option>Chorizo</option>
-          <option>Birria Chicken</option>
-          <option>Barbacoa</option>
-        </select>
-      </label>
-      <label>Side<br>
-        <select id="sideChoice">
-          <option value="">None</option>
-          <option>Rice</option>
-          <option>Fries</option>
-          <option>Rice & Beans</option>
-          <option>Rice/Fries</option>
-          <option>Cheese Fries</option>
-          <option>Chips</option>
-          <option>Nachos & Cheese</option>
-          <option>Con/Elote</option>
-        </select>
-      </label>
-      <label>Qty<br>
-        <input id="itemQty" type="number" min="1" value="1" style="width:80px" />
-      </label>
-    </div>
-    <div style="height:8px"></div>
-    <label>Special Note (optional)<br>
-      <input id="itemNote" placeholder="no onion, mild, extra salsa..." />
-    </label>
-
-    <hr />
-
-    <div id="menuRoot"></div>
-
-    <hr />
-
-    <div>
-      <div class="badge">Items in this order</div>
-      <div id="itemsList" style="margin-top:8px"></div>
-      <div style="margin-top:8px" class="row">
-        <span class="order-total">Total: $<span id="orderTotal">0.00</span></span>
-      </div>
-    </div>
-
-    <div style="height:10px"></div>
-    <label>Order Notes (whole order, optional)<br>
-      <textarea id="notes" placeholder="General instructions for chef..."></textarea>
-    </label>
-
-    <div style="height:10px"></div>
-    <div class="row">
-      <button id="sendBtn">Send to Kitchen</button>
-      <button id="clearBtn" class="secondary">Clear</button>
-      <span id="statusMsg" class="badge"></span>
-    </div>
+<div class="card">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <input id="createdBy" placeholder="Cashier name" />
+    <select id="orderType">
+      <option>Takeaway</option>
+      <option>Dine-in</option>
+      <option>Delivery</option>
+    </select>
   </div>
+</div>
+
+<div class="card">
+  <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:10px">
+    <select id="meatChoice">
+      <option value="">Meat</option>
+      <option>Steak</option>
+      <option>Asada</option>
+      <option>Pork</option>
+      <option>Al Pastor</option>
+      <option>Chorizo</option>
+      <option>Birria Chicken</option>
+      <option>Barbacoa</option>
+    </select>
+
+    <select id="sideChoice">
+      <option value="">Side</option>
+      <option>Rice</option>
+      <option>Fries</option>
+      <option>Rice & Beans</option>
+      <option>Rice/Fries</option>
+    </select>
+
+    <input id="qty" type="number" min="1" value="1"/>
+  </div>
+
+  <input id="note" style="margin-top:8px" placeholder="Special note (no onion, spicy, etc)" />
+</div>
+
+<div class="card" id="menu"></div>
+
+<div class="card">
+  <div id="items"></div>
+  <div style="margin-top:10px" class="total-box">
+    Total: $<span id="total">0.00</span>
+  </div>
+  <div style="margin-top:10px">
+    <button onclick="sendOrder()">Send to Kitchen</button>
+    <button class="secondary" onclick="clearOrder()">Clear</button>
+  </div>
+</div>
+
 </main>
 
 <script src="/common.js"></script>
 <script>
 const MENU = [
-  {
-    name: "Birria Specials",
-    items: [
-      { id: "3_birria_tacos", label: "3 Birria Tacos (w/ rice or fries)", price: 14.99 },
-      { id: "birria_pizza", label: "Birria Pizza", price: 19.99 },
-      { id: "3_chicken_birria", label: "3 Chicken Birria (w/ rice or fries)", price: 14.99 },
-    ]
-  },
-  {
-    name: "Burritos & Quesadillas",
-    items: [
-      { id: "quesadilla", label: "Quesadilla", price: 14.99 },
-      { id: "quesadilla_rf", label: "Quesadilla w/ rice & fries", price: 16.99 },
-      { id: "burrito", label: "Burrito", price: 14.99 },
-      { id: "california_burrito", label: "California Burrito", price: 16.99 },
-    ]
-  },
-  {
-    name: "Fajitas",
-    items: [
-      { id: "fajita_plate", label: "Fajita Plate (beef/pollo/combo)", price: 9.99 },
-    ]
-  },
-  {
-    name: "Taco Plates",
-    items: [
-      { id: "2_chicken_pork_tacos", label: "2 Chicken or Pork Tacos (w/ rice & beans)", price: 9.99 },
-      { id: "3_tacos_al_pastor_chicken", label: "3 Tacos Al Pastor/Chicken (w/ rice or fries)", price: 12.99 },
-      { id: "3_tacos_asada", label: "3 Tacos Asada (w/ rice or fries)", price: 14.99 },
-      { id: "any_taco", label: "Any Taco", price: 3.99 },
-    ]
-  },
-  {
-    name: "Tortas & Hotdogs",
-    items: [
-      { id: "torta", label: "Torta", price: 14.99 },
-      { id: "torta_rf", label: "Torta w/ rice & fries", price: 16.99 },
-      { id: "2_mexican_hotdogs", label: "2 Mexican Hotdogs", price: 7.99 },
-      { id: "2_mexican_hotdogs_rf", label: "2 Mexican Hotdogs w/ rice & fries", price: 9.99 },
-      { id: "2_hotdogs_asada", label: "2 Hotdogs w/ Asada", price: 11.99 },
-      { id: "2_hotdogs_asada_rf", label: "2 Hotdogs w/ Asada w/ rice & fries", price: 13.99 },
-    ]
-  },
-  {
-    name: "Crunchy Favorites",
-    items: [
-      { id: "california_flauta", label: "California Flauta", price: 9.99 },
-      { id: "nachos", label: "Nachos", price: 14.99 },
-    ]
-  },
-  {
-    name: "Mexican Drinks",
-    items: [
-      { id: "jarritos", label: "Jarritos (variety)", price: 0.00 },
-    ]
-  },
-  {
-    name: "Sides",
-    items: [
-      { id: "side_rice", label: "Rice", price: 2.99 },
-      { id: "side_fries", label: "Fries", price: 3.99 },
-      { id: "side_rice_beans", label: "Rice & Beans", price: 5.99 },
-      { id: "side_cheese_fries", label: "Cheese Fries", price: 6.99 },
-      { id: "side_chips", label: "Chips", price: 2.99 },
-      { id: "side_nachos_cheese", label: "Nachos & Cheese", price: 2.99 },
-      { id: "side_con_elote", label: "Con/Elote", price: 3.99 },
-    ]
-  }
+  {cat:"Birria Specials", items:[
+    ["3 Birria Tacos",14.99],
+    ["Birria Pizza",19.99],
+    ["3 Chicken Birria",14.99]
+  ]},
+  {cat:"Burritos & Quesadillas", items:[
+    ["Quesadilla",14.99],
+    ["Quesadilla w/ rice & fries",16.99],
+    ["Burrito",14.99],
+    ["California Burrito",16.99]
+  ]},
+  {cat:"Fajitas", items:[
+    ["Fajita Plate",14.99]   // ✅ UPDATED
+  ]},
+  {cat:"Crunchy Favorites", items:[
+    ["Nachos",14.99],
+    ["Nachos & Cheese",4.99] // ✅ UPDATED
+  ]}
 ];
 
-let items = [];
+let order=[];
 
-function money(n){ return n.toFixed(2); }
-function setMsg(s){ document.querySelector("#statusMsg").textContent = s || ""; }
-
-function buildMenu(){
-  const root = document.querySelector("#menuRoot");
-  root.innerHTML = "";
-  MENU.forEach(cat => {
-    const title = document.createElement("div");
-    title.className = "menu-category-title";
-    title.textContent = cat.name;
-    root.appendChild(title);
-
-    const grid = document.createElement("div");
-    grid.className = "menu-grid";
-
-    cat.items.forEach(item => {
-      const btn = document.createElement("button");
-      btn.className = "menu-btn";
-      btn.onclick = () => addMenuItem(item);
-      btn.innerHTML = `
-        <span class="menu-btn-title">${item.label}</span>
-        <span class="menu-btn-price">$${money(item.price)}</span>
-      `;
-      grid.appendChild(btn);
-    });
-
-    root.appendChild(grid);
+function renderMenu(){
+  const root=document.getElementById("menu");
+  root.innerHTML="";
+  MENU.forEach(c=>{
+    root.innerHTML+=`<div class="menu-category">
+      <div class="menu-title">${c.cat}</div>
+      <div class="menu-grid">
+        ${c.items.map(i=>`
+          <div class="menu-btn" onclick="addItem('${i[0]}',${i[1]})">
+            <div class="menu-name">${i[0]}</div>
+            <div class="menu-price">$${i[1].toFixed(2)}</div>
+          </div>`).join("")}
+      </div>
+    </div>`;
   });
 }
 
-function recomputeTotal(){
-  const total = items.reduce((sum, it)=> sum + (it.price || 0) * it.qty, 0);
-  document.querySelector("#orderTotal").textContent = money(total);
+function addItem(name,price){
+  const qty=+document.getElementById("qty").value||1;
+  const note=[document.getElementById("meatChoice").value,
+              document.getElementById("sideChoice").value,
+              document.getElementById("note").value]
+              .filter(Boolean).join(" | ");
+  order.push({name,price,qty,note});
+  renderItems();
 }
 
 function renderItems(){
-  const root = document.querySelector("#itemsList");
-  root.innerHTML = "";
-  if (!items.length) {
-    root.textContent = "No items yet.";
-    document.querySelector("#orderTotal").textContent = "0.00";
-    return;
-  }
-  items.forEach((it, idx) => {
-    const row = document.createElement("div");
-    row.className = "row";
-    row.style.justifyContent = "space-between";
-    row.style.marginBottom = "6px";
-
-    const left = document.createElement("div");
-    const lineTotal = (it.price || 0) * it.qty;
-    const noteText = it.note ? ` • ${it.note}` : "";
-    left.innerHTML = `<b>${it.qty}x</b> ${it.name}${noteText}<br><small>$${money(it.price || 0)} each • Line: $${money(lineTotal)}</small>`;
-
-    const btn = document.createElement("button");
-    btn.textContent = "Remove";
-    btn.className = "danger";
-    btn.onclick = () => { items.splice(idx,1); renderItems(); recomputeTotal(); };
-
-    row.appendChild(left);
-    row.appendChild(btn);
-    root.appendChild(row);
+  const el=document.getElementById("items");
+  let total=0;
+  el.innerHTML="";
+  order.forEach(o=>{
+    total+=o.price*o.qty;
+    el.innerHTML+=`<div>${o.qty}× ${o.name} ${o.note?`(${o.note})`:""}</div>`;
   });
-  recomputeTotal();
+  document.getElementById("total").textContent=total.toFixed(2);
 }
 
-function addMenuItem(menuItem){
-  const qty = Math.max(1, Number(document.querySelector("#itemQty").value || 1));
-  const meat = document.querySelector("#meatChoice").value;
-  const side = document.querySelector("#sideChoice").value;
-  const extraNote = document.querySelector("#itemNote").value.trim();
-
-  const parts = [];
-  if (meat) parts.push(meat);
-  if (side) parts.push(side);
-  if (extraNote) parts.push(extraNote);
-
-  const note = parts.join(" | ");
-
-  items.push({
-    id: menuItem.id,
-    name: menuItem.label,
-    qty,
-    note,
-    price: menuItem.price
-  });
-
-  setMsg("");
+function clearOrder(){
+  order=[];
   renderItems();
 }
 
-document.querySelector("#clearBtn").onclick = () => {
-  items = [];
-  document.querySelector("#notes").value = "";
-  document.querySelector("#itemNote").value = "";
-  document.querySelector("#itemQty").value = 1;
-  document.querySelector("#meatChoice").value = "";
-  document.querySelector("#sideChoice").value = "";
-  setMsg("Cleared.");
-  renderItems();
-};
-
-document.querySelector("#sendBtn").onclick = async () => {
-  try {
-    if (!items.length) return setMsg("Add at least 1 item");
-    const createdBy = document.querySelector("#createdBy").value.trim() || "FrontDesk";
-    const orderType = document.querySelector("#orderType").value;
-    const notes = document.querySelector("#notes").value.trim();
-
-    const r = await api("/api/orders", {
-      method: "POST",
-      body: JSON.stringify({ createdBy, orderType, notes, items })
-    });
-
-    setMsg(`Sent! Order #${r.id}`);
-    items = [];
-    document.querySelector("#notes").value = "";
-    renderItems();
-  } catch(e) {
-    setMsg("Error: " + e.message);
-  }
-};
-
-async function loadMeta(){
-  try {
-    const m = await api("/api/meta");
-    document.querySelector("#meta").textContent = `Store: ${m.storeName} • Business Day: ${m.businessDateToday}`;
-  } catch(e) {}
+async function sendOrder(){
+  if(!order.length)return;
+  await api("/api/orders",{
+    method:"POST",
+    body:JSON.stringify({
+      createdBy:createdBy.value||"FrontDesk",
+      orderType:orderType.value,
+      items:order
+    })
+  });
+  clearOrder();
 }
-
-buildMenu();
-renderItems();
-loadMeta();
+renderMenu();
 </script>
 </body>
 </html>
