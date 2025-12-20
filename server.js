@@ -56,7 +56,8 @@ function getBusinessDate(d = new Date()) {
 app.get("/api/meta", (req, res) => {
   res.json({
     storeName: "Sabor a Mexico",
-    businessDateToday: getBusinessDate(new Date())
+    businessDateToday: getBusinessDate(new Date()),
+    taxRate: TAX_RATE
   });
 });
 
@@ -140,7 +141,7 @@ app.get("/api/summary", (req, res) => {
     ? Number((prepTimes.reduce((a, b) => a + b, 0) / prepTimes.length).toFixed(1))
     : 0;
 
-  // Money totals (exclude canceled orders)
+  // Money totals (exclude canceled)
   const moneyOrders = list.filter(o => o.status !== "CANCELED");
   const subtotal = round2(moneyOrders.reduce((sum, o) => sum + calcOrderSubtotal(o), 0));
   const tax = round2(subtotal * TAX_RATE);
@@ -160,7 +161,7 @@ app.get("/api/summary", (req, res) => {
   });
 });
 
-// CSV export (includes subtotal/tax/total per order)
+// CSV export (includes subtotal/tax/total per order + daily totals at bottom)
 app.get("/api/export.csv", (req, res) => {
   const date = req.query.date || getBusinessDate(new Date());
   const list = DB.filter(o => o.businessDate === date);
@@ -218,7 +219,7 @@ app.get("/api/export.csv", (req, res) => {
     lines.push(row.join(","));
   }
 
-  // Add 3 summary lines at bottom (easy for Excel)
+  // Summary lines for Excel
   lines.push("");
   lines.push(`,,,,,,,,Daily Subtotal,${daySubtotal},,,,`);
   lines.push(`,,,,,,,,Daily Tax (${(TAX_RATE * 100).toFixed(0)}%),${dayTax},,,,`);
