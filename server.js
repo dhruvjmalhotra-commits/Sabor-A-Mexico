@@ -18,7 +18,7 @@ function calcOrderSubtotal(order) {
   return items.reduce((sum, it) => {
     const qty = Number(it.qty || 0);
     const price = Number(it.price || 0);
-    return sum + (qty * price);
+    return sum + qty * price;
   }, 0);
 }
 
@@ -66,6 +66,7 @@ app.post("/api/orders", (req, res) => {
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: "items must be a non-empty array" });
   }
+
   const now = Date.now();
   const order = {
     id: DB.length ? DB[DB.length - 1].id + 1 : 1,
@@ -80,6 +81,7 @@ app.post("/api/orders", (req, res) => {
     canceledAt: null,
     businessDate: getBusinessDate(new Date())
   };
+
   DB.push(order);
   saveDb();
   res.json({ id: order.id, status: order.status });
@@ -120,11 +122,12 @@ app.patch("/api/orders/:id", (req, res) => {
   res.json({ ok: true, status: order.status });
 });
 
-// Summary for a date
+// Summary for a date (WITH MONEY TOTALS)
 app.get("/api/summary", (req, res) => {
   const date = req.query.date || getBusinessDate(new Date());
   const list = DB.filter(o => o.businessDate === date);
-  const total = list.length;
+
+  const totalOrders = list.length;
   const completed = list.filter(o => o.status === "COMPLETED").length;
   const canceled = list.filter(o => o.status === "CANCELED").length;
   const inProgress = list.filter(o => o.status === "IN_PROGRESS").length;
@@ -137,16 +140,35 @@ app.get("/api/summary", (req, res) => {
     ? Number((prepTimes.reduce((a, b) => a + b, 0) / prepTimes.length).toFixed(1))
     : 0;
 
-  res.json({ date, total, completed, canceled, inProgress, avgPrepMin });
+  // Money totals (exclude canceled orders)
+  const moneyOrders = list.filter(o => o.status !== "CANCELED");
+  const subtotal = round2(moneyOrders.reduce((sum, o) => sum + calcOrderSubtotal(o), 0));
+  const tax = round2(subtotal * TAX_RATE);
+  const grandTotal = round2(subtotal + tax);
+
+  res.json({
+    date,
+    totalOrders,
+    completed,
+    canceled,
+    inProgress,
+    avgPrepMin,
+    taxRate: TAX_RATE,
+    subtotal,
+    tax,
+    grandTotal
+  });
 });
 
-// CSV export
+// CSV export (includes subtotal/tax/total per order)
 app.get("/api/export.csv", (req, res) => {
   const date = req.query.date || getBusinessDate(new Date());
   const list = DB.filter(o => o.businessDate === date);
+
   const headers = [
     "id","businessDate","status","orderType",
     "createdBy","createdAt","acceptedAt","doneAt",
+    "subtotal","tax","total",
     "notes","items"
   ];
   const lines = [headers.join(",")];
@@ -154,10 +176,16 @@ app.get("/api/export.csv", (req, res) => {
   const toCsv = (v) => {
     const s = (v ?? "").toString();
     if (s.includes('"') || s.includes(",") || s.includes("\n")) {
-      return '"' + s.replace(/"/g,'""') + '"';
+      return '"' + s.replace(/"/g, '""') + '"';
     }
     return s;
   };
+
+  // Daily totals (exclude canceled)
+  const moneyOrders = list.filter(o => o.status !== "CANCELED");
+  const daySubtotal = round2(moneyOrders.reduce((sum, o) => sum + calcOrderSubtotal(o), 0));
+  const dayTax = round2(daySubtotal * TAX_RATE);
+  const dayTotal = round2(daySubtotal + dayTax);
 
   for (const o of list) {
     const itemsStr = (o.items || []).map(it => {
@@ -166,6 +194,10 @@ app.get("/api/export.csv", (req, res) => {
       const price = typeof it.price === "number" ? ` $${it.price.toFixed(2)}` : "";
       return base + note + price;
     }).join(" | ");
+
+    const sub = round2(calcOrderSubtotal(o));
+    const tx = round2(sub * TAX_RATE);
+    const tot = round2(sub + tx);
 
     const row = [
       o.id,
@@ -176,6 +208,9 @@ app.get("/api/export.csv", (req, res) => {
       o.createdAt,
       o.acceptedAt,
       o.doneAt,
+      sub,
+      tx,
+      tot,
       o.notes || "",
       itemsStr
     ].map(toCsv);
@@ -183,7 +218,13 @@ app.get("/api/export.csv", (req, res) => {
     lines.push(row.join(","));
   }
 
-  res.setHeader("Content-Type","text/csv");
+  // Add 3 summary lines at bottom (easy for Excel)
+  lines.push("");
+  lines.push(`,,,,,,,,Daily Subtotal,${daySubtotal},,,,`);
+  lines.push(`,,,,,,,,Daily Tax (${(TAX_RATE * 100).toFixed(0)}%),${dayTax},,,,`);
+  lines.push(`,,,,,,,,Daily Total,${dayTotal},,,,`);
+
+  res.setHeader("Content-Type", "text/csv");
   res.setHeader("Content-Disposition", `attachment; filename="orders_${date}.csv"`);
   res.send(lines.join("\n"));
 });
