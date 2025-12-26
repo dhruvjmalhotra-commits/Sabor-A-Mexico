@@ -2,126 +2,212 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sabor a Mexico - Kitchen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="/style.css" />
+  <style>
+    body { background:#0b1220; color:#f8fafc; font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif; margin:0; }
+    header { padding:14px 16px; background:#0f172a; border-bottom:1px solid #1e293b; }
+    h1 { margin:0; font-size:20px; font-weight:900; }
+    .muted { color:#94a3b8; font-size:12px; }
+    main { padding:16px; max-width: 1300px; margin: 0 auto; }
+
+    .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+    select, button {
+      padding:10px 12px; border-radius:10px;
+      border:1px solid #24324a; background:#0b1220; color:#f8fafc;
+      font-weight:800;
+    }
+    button { background:#16a34a; border:none; cursor:pointer; }
+    button.secondary { background:#334155; }
+
+    .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:12px; }
+    .card {
+      background:#0f172a; border:1px solid #1e293b; border-radius:16px;
+      padding:14px;
+      box-shadow: 0 10px 25px rgba(0,0,0,.25);
+    }
+    .row { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start; }
+    .id { font-weight:950; font-size:18px; }
+    .statusPill {
+      display:inline-block; padding:6px 10px; border-radius:999px;
+      border:1px solid #1e293b; background:#0b1220; font-weight:900; font-size:12px;
+    }
+    .pillNew { color:#22c55e; }
+    .pillProg { color:#fbbf24; }
+    .pillDone { color:#60a5fa; }
+    .pillCan { color:#f87171; }
+
+    .customerBox{
+      margin-top:10px;
+      padding:10px;
+      border-radius:12px;
+      background:#0b1220;
+      border:1px solid #1e293b;
+    }
+    .customerLabel { font-size:12px; font-weight:800; color:#94a3b8; }
+    .customerValue { font-size:14px; font-weight:900; margin-top:3px; }
+
+    .items { margin-top:10px; }
+    .itemLine { padding:8px 0; border-bottom:1px solid #1e293b; }
+    .itemName { font-weight:900; }
+    .itemNote { font-size:12px; color:#94a3b8; margin-top:3px; }
+
+    .btnRow { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    .btn { padding:10px 14px; border-radius:12px; font-weight:900; cursor:pointer; border:none; }
+    .accept { background:#16a34a; color:#fff; }
+    .done { background:#2563eb; color:#fff; }
+    .cancel { background:#b91c1c; color:#fff; }
+
+    .metaLine { margin-top:8px; font-size:12px; color:#94a3b8; }
+  </style>
 </head>
 <body>
 <header>
-  <div>
-    <h1>Kitchen Screen • Sabor a Mexico</h1>
-    <small id="meta"></small>
-  </div>
-  <div class="row">
-    <label>Chef Name<br><input id="chefName" placeholder="Chef" /></label>
-    <a href="/front.html">Front Desk</a>
-    <a href="/reports.html">Reports</a>
-  </div>
+  <h1>Kitchen Screen • Sabor a Mexico</h1>
+  <div class="muted">Tap ACCEPT when you start cooking, DONE when ready.</div>
 </header>
 
 <main>
-  <div class="kdsCols">
-    <div class="card">
-      <div class="menu-category-title">New Orders</div>
-      <div id="newOrders"></div>
-    </div>
-    <div class="card">
-      <div class="menu-category-title">In Progress</div>
-      <div id="progOrders"></div>
-    </div>
+  <div class="toolbar">
+    <select id="filter">
+      <option value="">All</option>
+      <option value="NEW">New</option>
+      <option value="IN_PROGRESS">In Progress</option>
+      <option value="COMPLETED">Completed</option>
+      <option value="CANCELED">Canceled</option>
+    </select>
+
+    <button onclick="loadOrders()">Refresh</button>
+    <button class="secondary" onclick="toggleAuto()"><span id="autoTxt">Auto Refresh: ON</span></button>
+    <span class="muted" id="lastUpdated"></span>
   </div>
-  <div class="card">
-    <span class="badge" id="lastSync"></span>
-  </div>
+
+  <div class="grid" id="grid"></div>
 </main>
 
 <script src="/common.js"></script>
 <script>
-let meta = null;
+let auto = true;
+let timer = null;
 
-async function loadMeta(){
-  try {
-    meta = await api("/api/meta");
-    document.querySelector("#meta").textContent = `Store: ${meta.storeName} • Business Day: ${meta.businessDateToday}`;
-  } catch(e) {
-    document.querySelector("#meta").textContent = "Meta error: " + e.message;
-  }
+function fmtTime(ms){
+  if(!ms) return "-";
+  const d = new Date(ms);
+  return d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
 }
 
-function orderCard(o){
-  const chef = document.querySelector("#chefName").value.trim() || "Chef";
-  const ageMin = minutesSince(o.createdAt);
-  const header = el("div", { class:"orderId" }, `ORDER #${o.id}`, " ",
-    el("span", { class:"timer" }, `⏱ ${ageMin} min`)
-  );
-  const itemsWrap = el("div", { class:"items" });
-  (o.items || []).forEach(it => {
-    itemsWrap.appendChild(
-      el("div", { class:"itemLine" },
-        `${it.qty}x ${it.name}${it.note ? " — " + it.note : ""}`
-      )
-    );
+function statusPill(status){
+  if (status === "NEW") return `<span class="statusPill pillNew">NEW</span>`;
+  if (status === "IN_PROGRESS") return `<span class="statusPill pillProg">IN PROGRESS</span>`;
+  if (status === "COMPLETED") return `<span class="statusPill pillDone">COMPLETED</span>`;
+  if (status === "CANCELED") return `<span class="statusPill pillCan">CANCELED</span>`;
+  return `<span class="statusPill">${status}</span>`;
+}
+
+// ✅ Makes customer info look nice even if createdBy is long
+function prettyCustomer(createdBy){
+  const s = (createdBy || "").trim();
+  if (!s) return "—";
+  // If it starts with "Customer:" keep it, else show as-is
+  return s;
+}
+
+async function loadOrders(){
+  const filter = document.getElementById("filter").value;
+  const qs = filter ? `?status=${encodeURIComponent(filter)}` : "";
+  const data = await api("/api/orders" + qs);
+
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+
+  if (!data.length) {
+    grid.innerHTML = `<div class="muted">No orders right now.</div>`;
+  } else {
+    data
+      .sort((a,b)=> b.id - a.id)
+      .forEach(o => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const itemsHtml = (o.items || []).map(it => {
+          const note = it.note ? `<div class="itemNote">${it.note}</div>` : "";
+          return `<div class="itemLine">
+            <div class="itemName">${it.qty}× ${it.name}</div>
+            ${note}
+          </div>`;
+        }).join("");
+
+        // ✅ CUSTOMER INFO BOX (from createdBy)
+        const customerHtml = `
+          <div class="customerBox">
+            <div class="customerLabel">Customer</div>
+            <div class="customerValue">${prettyCustomer(o.createdBy)}</div>
+          </div>
+        `;
+
+        // action buttons
+        const actions = `
+          <div class="btnRow">
+            <button class="btn accept" onclick="updateStatus(${o.id}, 'ACCEPT')">ACCEPT</button>
+            <button class="btn done" onclick="updateStatus(${o.id}, 'DONE')">DONE</button>
+            <button class="btn cancel" onclick="updateStatus(${o.id}, 'CANCEL')">CANCEL</button>
+          </div>
+        `;
+
+        card.innerHTML = `
+          <div class="row">
+            <div class="id">#${o.id}</div>
+            <div>${statusPill(o.status)}</div>
+          </div>
+
+          ${customerHtml}
+
+          <div class="metaLine">
+            Type: <b>${o.orderType || "-"}</b> • Created: <b>${fmtTime(o.createdAt)}</b>
+          </div>
+
+          <div class="items">${itemsHtml}</div>
+
+          ${actions}
+        `;
+
+        grid.appendChild(card);
+      });
+  }
+
+  document.getElementById("lastUpdated").textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+}
+
+async function updateStatus(id, action){
+  await api(`/api/orders/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ action })
   });
-  const footer = el("div", { class: "footer-line" },
-    el("div", null, `Type: ${o.orderType || "-"}`),
-    el("div", null, `Created: ${fmtTime(o.createdAt)}`)
-  );
-  const btnRow = el("div", { class:"row", style:"margin-top:8px" });
-
-  if (o.status === "NEW") {
-    btnRow.appendChild(
-      el("button", { class:"secondary", onclick: async () => {
-        await api(`/api/orders/${o.id}`, { method:"PATCH", body: JSON.stringify({ action:"ACCEPT" }) });
-        refresh();
-      }}, "ACCEPT")
-    );
-  }
-  if (o.status === "IN_PROGRESS" || o.status === "NEW") {
-    btnRow.appendChild(
-      el("button", { class:"good", onclick: async () => {
-        await api(`/api/orders/${o.id}`, { method:"PATCH", body: JSON.stringify({ action:"DONE" }) });
-        refresh();
-      }}, "DONE")
-    );
-    btnRow.appendChild(
-      el("button", { class:"danger", onclick: async () => {
-        await api(`/api/orders/${o.id}`, { method:"PATCH", body: JSON.stringify({ action:"CANCEL" }) });
-        refresh();
-      }}, "CANCEL")
-    );
-  }
-
-  return el("div", { class:"card" }, header, itemsWrap, footer, btnRow);
+  loadOrders();
 }
 
-async function refresh(){
-  try {
-    if (!meta) await loadMeta();
-    const date = meta.businessDateToday;
-    const all = await api(`/api/orders?date=${encodeURIComponent(date)}`);
-    const news = all.filter(o => o.status === "NEW");
-    const progs = all.filter(o => o.status === "IN_PROGRESS");
-
-    const newRoot = document.querySelector("#newOrders");
-    const progRoot = document.querySelector("#progOrders");
-    newRoot.innerHTML = "";
-    progRoot.innerHTML = "";
-
-    if (!news.length) newRoot.textContent = "No new orders.";
-    else news.forEach(o => newRoot.appendChild(orderCard(o)));
-
-    if (!progs.length) progRoot.textContent = "No orders in progress.";
-    else progs.forEach(o => progRoot.appendChild(orderCard(o)));
-
-    document.querySelector("#lastSync").textContent = "Last sync: " + new Date().toLocaleTimeString();
-  } catch(e) {
-    document.querySelector("#lastSync").textContent = "Sync error: " + e.message;
-  }
+function toggleAuto(){
+  auto = !auto;
+  document.getElementById("autoTxt").textContent = "Auto Refresh: " + (auto ? "ON" : "OFF");
+  if (auto) startTimer();
+  else stopTimer();
 }
 
-loadMeta();
-refresh();
-setInterval(refresh, 2000);
+function startTimer(){
+  stopTimer();
+  timer = setInterval(() => {
+    if (auto) loadOrders();
+  }, 3000);
+}
+
+function stopTimer(){
+  if (timer) clearInterval(timer);
+  timer = null;
+}
+
+loadOrders();
+startTimer();
 </script>
 </body>
 </html>
