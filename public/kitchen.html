@@ -117,16 +117,19 @@ async function loadOrders(){
   const filter = document.getElementById("filter").value;
   const qs = filter ? `?status=${encodeURIComponent(filter)}` : "";
   const data = await api("/api/orders" + qs);
+  const visibleOrders = data.filter(o => o.status !== "COMPLETED");
 
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
 
-  if (!data.length) {
+  if (!visibleOrders.length) {
     grid.innerHTML = `<div class="muted">No orders right now.</div>`;
   } else {
     data
-      .sort((a,b)=> b.id - a.id)
-      .forEach(o => {
+      visibleOrders
+  .sort((a,b)=> b.id - a.id)
+  .forEach(o => {
+
         const card = document.createElement("div");
         card.className = "card";
 
