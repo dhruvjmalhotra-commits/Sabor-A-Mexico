@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Sabor a Mexico - Front Desk</title>
+  <title>Sabor a Mexico - Order</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="/style.css" />
   <style>
@@ -27,7 +27,7 @@
     }
     .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
     .grid3 { display:grid; grid-template-columns: 1fr 1fr 90px; gap:10px; }
-    input, select, textarea {
+    input, select {
       width: 100%;
       padding: 10px;
       border-radius: 10px;
@@ -36,7 +36,6 @@
       color: #f8fafc;
       font-size: 14px;
     }
-    textarea { min-height: 70px; }
     .menu-category { margin-top: 12px; }
     .menu-title { font-size: 18px; font-weight: 900; color:#22c55e; margin: 8px 0; }
     .menu-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap:10px; }
@@ -71,9 +70,6 @@
     }
     button.secondary { background:#334155; }
     button.danger { background:#b91c1c; }
-    .pill { display:inline-block; padding:6px 10px; border-radius:999px; background:#0b1220; border:1px solid #1e293b; }
-    .topRow { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
-    .rightPill { font-size:12px; color:#cbd5e1; }
   </style>
 </head>
 
@@ -83,20 +79,22 @@
 <div class="wrap">
 
   <div class="card">
-    <div class="topRow">
-      <div class="muted">Front Desk Order Screen</div>
-      <div class="pill rightPill">Tax: <b>9%</b></div>
-    </div>
+    <div class="muted">Place your order</div>
     <div style="height:10px"></div>
 
+    <!-- Customer name + phone instead of cashier name -->
     <div class="grid2">
-      <input id="createdBy" placeholder="Cashier name (example: Sam)" />
-      <select id="orderType">
-        <option>Takeaway</option>
-        <option>Dine-in</option>
-        <option>Delivery</option>
-      </select>
+      <input id="customerName" placeholder="Customer Name" />
+      <input id="customerPhone" placeholder="Phone Number" inputmode="tel" />
     </div>
+
+    <div style="height:10px"></div>
+
+    <select id="orderType">
+      <option>Takeaway</option>
+      <option>Dine-in</option>
+      <option>Delivery</option>
+    </select>
   </div>
 
   <div class="card">
@@ -128,8 +126,8 @@
     </div>
 
     <div style="height:10px"></div>
-    <input id="note" placeholder="Special note (example: no onion, extra salsa, mild)" />
-    <div class="muted" style="margin-top:6px">Meat + Side + Special note will be attached to the item you add.</div>
+    <input id="note" placeholder="Special note (no onion, extra salsa, mild)" />
+    <div class="muted" style="margin-top:6px">Meat + Side + Note will be attached to the item you add.</div>
   </div>
 
   <div class="card" id="menu"></div>
@@ -139,15 +137,17 @@
       <div style="font-weight:900;font-size:18px;">Items</div>
       <div id="status" class="muted"></div>
     </div>
+
     <div id="items" style="margin-top:10px"></div>
 
+    <!-- Totals show subtotal/tax/total but do NOT show "Tax 9%" label -->
     <div class="totalsBox">
       <div class="totalCard">
         <div class="totalLabel">Subtotal</div>
         <div class="totalValue">$<span id="subtotal">0.00</span></div>
       </div>
       <div class="totalCard">
-        <div class="totalLabel">Tax (9%)</div>
+        <div class="totalLabel">Tax</div>
         <div class="totalValue">$<span id="tax">0.00</span></div>
       </div>
       <div class="totalCard">
@@ -169,7 +169,7 @@
 <script>
 const TAX_RATE = 0.09;
 
-// FULL MENU (based on your photo + earlier list)
+// Full menu (same as earlier)
 const MENU = [
   {cat:"Birria Specials", items:[
     ["3 Birria Tacos (w/ rice or fries)",14.99],
@@ -183,7 +183,7 @@ const MENU = [
     ["California Burrito",16.99],
   ]},
   {cat:"Fajitas", items:[
-    ["Fajita Plate (beef/pollo/combo)",14.99], // ✅ UPDATED
+    ["Fajita Plate (beef/pollo/combo)",14.99],
   ]},
   {cat:"Taco Plates", items:[
     ["2 Chicken or Pork Tacos (w/ rice & beans)",9.99],
@@ -203,16 +203,13 @@ const MENU = [
     ["California Flauta",9.99],
     ["Nachos",14.99],
   ]},
-  {cat:"Mexican Drinks", items:[
-    ["Jarritos (variety)",0.00],
-  ]},
   {cat:"Sides", items:[
     ["Rice",2.99],
     ["Fries",3.99],
     ["Rice & Beans",5.99],
     ["Cheese Fries",6.99],
     ["Chips",2.99],
-    ["Nachos & Cheese",4.99], // ✅ UPDATED
+    ["Nachos & Cheese",4.99],
     ["Con/Elote",3.99],
   ]},
 ];
@@ -263,7 +260,7 @@ function renderItems(){
   if (!order.length) {
     el.innerHTML = `<div class="muted">No items yet.</div>`;
   } else {
-    order.forEach((o, idx) => {
+    order.forEach((o) => {
       const lineTotal = o.price * o.qty;
       const line = document.createElement("div");
       line.className = "itemsLine";
@@ -303,21 +300,33 @@ function removeLast(){
   }
 }
 
+function normalizePhone(p){
+  // keep digits only (so it stores clean)
+  return (p || "").replace(/\D/g, "");
+}
+
 async function sendOrder(){
   if (!order.length) {
     document.getElementById("status").textContent = "Add at least 1 item.";
     return;
   }
+
+  const name = (document.getElementById("customerName").value || "").trim();
+  const phone = normalizePhone(document.getElementById("customerPhone").value);
+
+  // Put customer info into createdBy (so it shows everywhere without changing backend)
+  const createdBy = name ? `Customer: ${name}${phone ? " ("+phone+")" : ""}` : `Customer${phone ? " ("+phone+")" : ""}`;
+
   try {
     await api("/api/orders", {
       method: "POST",
       body: JSON.stringify({
-        createdBy: (document.getElementById("createdBy").value || "FrontDesk").trim(),
+        createdBy,
         orderType: document.getElementById("orderType").value,
         items: order
       })
     });
-    document.getElementById("status").textContent = "Sent to kitchen ✅";
+    document.getElementById("status").textContent = "Sent ✅";
     clearOrder();
   } catch (e) {
     document.getElementById("status").textContent = "Error: " + e.message;
